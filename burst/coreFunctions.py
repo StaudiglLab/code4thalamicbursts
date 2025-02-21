@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import scipy
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy.signal import find_peaks
-from sklearn.decomposition import PCA
+
 
 from core import *
 from core.helpers import *

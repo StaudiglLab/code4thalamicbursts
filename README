@@ -1,7 +1,12 @@
 ---------------
-Dependencies
+Installation and Dependencies
 ---------------
-python (>3) and the following python packages:
+
+Please clone the current repository (using git clone on linux or gitHub Desktop on windows). Simply downloading the .zip compressed file would not work.
+
+Dependencies:
+
+python (3.12.2) and the following python packages:
 MNE-Python (1.8.0)
 numpy (1.26.4)
 numba (0.60.0)
@@ -9,7 +14,11 @@ matplotlib (3.9.2)
 scipy (1.14.1)
 pandas (2.2.3)
 seaborn (0.13.2)
-git (3.1.43)
+gitpython (3.1.43)
+joblib (1.4.2)
+fooof (1.26.4)
+scikit-learn (1.5.2)
+
 
 NOTE: The versions for the packages indicate those on which the codes were tested to run. However, the code is also expected to run with other versions of the packages.
 
@@ -36,7 +45,5 @@ Demo
 ---------------
 For a demo of the burst detection algorithm, please run burst/demoDetection.py (this should not take more than a few minutes on a typical computer).
 This would run the entire algorithm on 15m of raw data extracted from one of the patients in our cohort. The 15m data contains 5m each of wakefullness, REM, and NREM sleep, extracted from the raw thalamic iEEG recording of the patient.
-The script would produce an output summary figure, "burst/figures/bursts_demo.pdf" showing the burst rate as a function of time and frequency. The timestamps and frequencies corresponding to individual bursts can be found at "dataFilesPublic/burstFromMorlet/demo_R1-R2_selected.txt" while the list of bands with significantly elevated burst probabilities can be found at "burst/outfiles/bursts_detectedFrequencies_demo_selected.txt".
-
-
+The script would produce an output summary figure, "burst/figures/bursts_demo.pdf" showing the burst rate as a function of time and frequency (in colorscale). The timestamps and frequencies corresponding to individual bursts can be found at "dataFilesPublic/burstFromMorlet/demo_R1-R2_selected.txt" while the list of bands with significantly elevated burst probabilities can be found at "burst/outfiles/bursts_detectedFrequencies_demo_selected.txt".
 
