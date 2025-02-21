@@ -18,7 +18,8 @@ gitpython (3.1.43)
 joblib (1.4.2)
 fooof (1.26.4)
 scikit-learn (1.5.2)
-
+nilearn (0.10.4)
+h5py (3.12.1)
 
 NOTE: The versions for the packages indicate those on which the codes were tested to run. However, the code is also expected to run with other versions of the packages.
 
