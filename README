@@ -23,7 +23,7 @@ h5py (3.12.1)
 
 NOTE: The versions for the packages indicate those on which the codes were tested to run. However, the code is also expected to run with other versions of the packages.
 
-The install time of the packages would vary with systems but each installation is typically few tens of seconds.
+The install time of the packages would vary with system but each installation is typically few tens of seconds.
 
 
 ---------------
