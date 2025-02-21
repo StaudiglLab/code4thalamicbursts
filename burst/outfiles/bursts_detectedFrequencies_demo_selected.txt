@@ -1,0 +1,4 @@
+pID ch_name state freqPeak freqLow freqHigh pvaluesLeft pvaluesRight pvaluesBoth pvaluesMean peakBurstRate meanBurstRate meanBurstRate_wake meanBurstRate_REM meanBurstRate_NREM
+demo R1-R2 wake 27.5 25.5 30.5 0.0 0.0 0.0 0.0 11.2 57.60000000000001 57.60000000000001 52.400000000000006 4.4
+demo R1-R2 REM 28.5 26.0 31.5 0.0 0.0 0.0 0.0 7.6 56.199999999999996 59.400000000000006 56.199999999999996 4.6000000000000005
+demo R1-R2 NREM 12.0 10.5 16.0 0.0 0.0 0.0 0.0 3.8 20.0 2.6 1.5999999999999999 20.0

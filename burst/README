@@ -1,0 +1,25 @@
+-- detectFromMorlet.py : Contains functions for intial detection of bursts
+-- selectBursts.py : Contains functions to impose additional criteria to get "true" bursts (number of cycles, etc)
+
+-- coreFunctions.py : contains a lot of key functions shared across different parts of the code
+
+-- executeDetection.py : Runs the above codes for entire cohort to get morlet bursts
+-- getSelectedBand.py : gets a list of frequency bands with significantly elevated burst probability
+
+-- plotHelpers.py: contains helper functions for various plots (especially those in figure 2)
+
+For figures and results in the paper:
+
+-- figure2.py for figure 2
+-- plotExampleBurstDetection.py for supplementary figure 1
+-- groupStats.py for running statistics for basic detection rates and burst densities.
+
+---------------
+Demo
+---------------
+For a demo of the burst detection algorithm, please run demoDetection.py [this is very similar to executeDetection.py, but for a demo file provided with the code]
+This would run the entire algorithm on 15m of raw data extracted from one of the patients in our cohort. The 15m data contains 5m each of wakefullness, REM, and NREM sleep, extracted from the raw thalamic iEEG recording of the patient.
+The script would produce an output summary figure, "burst/figures/bursts_demo.pdf" showing the burst rate as a function of time and frequency. The timestamps and frequencies corresponding to individual bursts can be found at "dataFilesPublic/burstFromMorlet/demo_R1-R2_selected.txt" while the list of bands with significantly elevated burst probabilities can be found at "burst/outfiles/bursts_detectedFrequencies_demo_selected.txt".
+
+
+

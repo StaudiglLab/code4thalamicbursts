@@ -1,0 +1,7 @@
+-- burstLockedResponse.py : compute average ERPs locked to bursts
+
+-- averageBursts.py : contains functions used to get widths
+
+For figures and results in the paper:
+
+-- figure4.py to generate figure 3, extended data figure 1 and extended data figure 6

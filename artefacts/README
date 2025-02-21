@@ -1,0 +1,2 @@
+run writeIEDMask.py to indentify periods of bad data.
+No dependency on helper functions.

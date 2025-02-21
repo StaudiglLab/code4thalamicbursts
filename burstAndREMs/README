@@ -1,0 +1,9 @@
+-- get_perieventhist_saccades.py : compute peri-event histograms
+-- perieventhist_saccades_stats.py : Compute statistics on perievent histograms
+
+-- coreFunctions.py : contains a lot of key functions shared across different parts of the code
+
+
+For figures and results in the paper:
+
+-- figure3.py to generate figure 3. 

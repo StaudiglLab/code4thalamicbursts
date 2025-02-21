@@ -1,0 +1,5 @@
+-- eyeMovDetectionCore.py: contains the actual implementation of the eye movmenet detection algorithm
+-- eyeMovDetection.py : execute this to run the algorithm on the entire cohort
+
+-- topoAtEyeEvent.py : gets deflections in scalp EEG channels during eye movements and plots them
+		     : also run to generate supplementary figure 2
