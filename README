@@ -37,12 +37,12 @@ Following are the scripts for the figures in manuscript
 -- figure 3 : burstAndREMs/figure3.py
 -- figure 4 : burstWidth/figure4.py
 -- figure 5 : localization/figure5.py
--- edf 1 : burstWidth/figure4.py
--- edf 2 : psd/extendedDataFigure2.py
--- edf 3 : connectivity/connectivityPlotForPaper.py
--- edf 4 : burst/plotExampleBurstDetection.py
--- edf 5 : eyeMovementDetection/topoAtEyeEvent.py
--- edf 6 : burstWidth/figure4.py
+-- Figure S1 : burstWidth/figure4.py
+-- Figure S2 : psd/extendedDataFigure2.py
+-- Figure S3 : connectivity/connectivityPlotForPaper.py
+-- Figure S4 : burst/plotExampleBurstDetection.py
+-- Figure S5 : eyeMovementDetection/topoAtEyeEvent.py
+-- Figure S6 : burstWidth/figure4.py
 
 ---------------
 Demo
