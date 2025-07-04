@@ -65,6 +65,7 @@ def compareSubjLevel(rate1,rate2,pID):
 		selmask=pID==uniqPID[i]
 		rate1Subj[i]=np.mean(rate1[selmask])
 		rate2Subj[i]=np.mean(rate2[selmask])
+	print(np.mean(rate1Subj<rate2Subj))
 	return wilcoxon(x=rate1Subj, y=rate2Subj).pvalue
 	
 
@@ -73,6 +74,8 @@ def countBands():
 	df=getSignificantBands('allUnique')
 	print("Total number of unique bands: %d"%len(df))
 	
+	
+
 	df=getSignificantBands('allUnique')
 	print("Total number of unique bands at <=19 Hz: %d"%np.sum(df['freqPeak']<19))
 	
@@ -84,6 +87,11 @@ def countBands():
 	print("Number of Wake specific bands: %d"%np.sum(np.logical_and(df['state']=='wake',df['freqPeak']>=19)))
 	print("Number of overlap bands: %d"%np.sum(np.logical_and.reduce((df['state']=='REM',df['freqPeak']>=19,df['hasOverlap_wake']))))
 	
+
+	df=getSignificantBands('gamma')
+	print("Total number of unique gamma bands: %d"%len(df))
+	print(np.column_stack(np.unique(df['pID'],return_counts=True)))
+
 #function to get detection probability of bands per bipolar contact	
 def getDetectionProbabilities():
 	df=getSignificantBands()
@@ -116,13 +124,15 @@ def getDetectionProbabilities():
 	
 #compare rates at the subject level between different bands	
 def getRateStats():
-	df=getSignificantBands(which='uniqueAll')	
+	df=getSignificantBands(which='allUnique')	
 	print("Number of unique bands:%d"%len(df))
 	
 	burstRateNREM=df['meanBurstRate_NREM'].values
 	burstRateWake=df['meanBurstRate_wake'].values	
 	burstRateREM=df['meanBurstRate_REM'].values
-	
+	burstRatePhasicREM=df['meanBurstRate_phasic_REM'].values
+	burstRateTonicREM=df['meanBurstRate_tonic_REM'].values
+
 	#changing ID of reimplanted patient to ensure proper subject level comparisions
 	pID=df['pID'].values
 	pID[pID=='p14_followup']='p14'
@@ -138,6 +148,15 @@ def getRateStats():
 	pGammaREM=compareSubjLevel(burstRateNREM[maskGamma],burstRateREM[maskGamma],pID[maskGamma])
 	print("p-values for rates in bands >=19 Hz: %.3e (wake), %.3e (REM)"%(pGammaWake,pGammaREM))
 
+	pGammaWakePhasicREM=compareSubjLevel(burstRatePhasicREM[maskGamma],burstRateWake[maskGamma],pID[maskGamma])
+	pGammaWakeTonicREM=compareSubjLevel(burstRateTonicREM[maskGamma],burstRateWake[maskGamma],pID[maskGamma])
+	pGammaPhasicTonic=compareSubjLevel(burstRateTonicREM[maskGamma],burstRatePhasicREM[maskGamma],pID[maskGamma])
+
+	pGammaNREMPhasicREM=compareSubjLevel(burstRatePhasicREM[maskGamma],burstRateNREM[maskGamma],pID[maskGamma])
+	pGammaNREMTonicREM=compareSubjLevel(burstRateTonicREM[maskGamma],burstRateNREM[maskGamma],pID[maskGamma])
+
+	print("p-values for rates in bands >=19 Hz: %.4f (wake-phasic), %.4f (wake-tonic), %.4f (phasic-tonic)"%(pGammaWakePhasicREM,pGammaWakeTonicREM,pGammaPhasicTonic))
+	print("p-values for rates in bands >=19 Hz: %.4f (phasic-NREM), %.4f (tonic-NREM)"%(pGammaNREMPhasicREM,pGammaNREMTonicREM))
 
 #compare rates at the subject level between different bands	
 def getScalpDetectionStats():
@@ -167,7 +186,7 @@ def getScalpDetectionStats():
 				niter=10000)
 	print(np.mean(countRealizations==0,axis=1))
 	print("Detection probability in of REM/wake specific oscillation (at >19 Hz):%.2f+/-%.2f"%(np.mean(countRealizations[0]),np.std(countRealizations[0])))
-getScalpDetectionStats()
+#etScalpDetectionStats()
 #countBands()	
 #getDetectionProbabilities()
-#getRateStats()
+getRateStats()

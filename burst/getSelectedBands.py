@@ -14,8 +14,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from core import *
 from core.helpers import *
-from burst.coreFunctions import getBurstRate2D,getOverlaps,getMeanBurstDensity
-from scipy.stats import spearmanr,binned_statistic
+from burst.coreFunctions import getMeanBurstDensity,getMeanBurstDensity_PhasicTonic
+from scipy.stats import spearmanr
 
 #add burst densities to the dataframe
 def addBurstDensity(df_freqs):
@@ -23,7 +23,8 @@ def addBurstDensity(df_freqs):
 	uniqCh=np.unique(df_freqs['ch_name'].values)
 	
 	peakBurstRateInBand,burstRateInBand=np.zeros(len(df_freqs)),np.zeros(len(df_freqs))
-	burstRateStates={'wake':np.zeros(len(df_freqs)),'REM':np.zeros(len(df_freqs)),'NREM':np.zeros(len(df_freqs))}	
+	burstRateStates={'wake':np.zeros(len(df_freqs)),'REM':np.zeros(len(df_freqs)),'NREM':np.zeros(len(df_freqs))
+				  ,'phasic_REM':np.zeros(len(df_freqs)),'tonic_REM':np.zeros(len(df_freqs))}	
 	
 	#loop over all subjects and channels
 	for i in range(0,len(uniqPID)):
@@ -39,11 +40,16 @@ def addBurstDensity(df_freqs):
 			burstRateStates['wake'][selmask]=burstRateStates_['wake']
 			burstRateStates['NREM'][selmask]=burstRateStates_['NREM']
 			burstRateStates['REM'][selmask]=burstRateStates_['REM']
-	
+
+			#call function to get the burst densities for phasic vs. tonic
+			
+			burstRateStates_= getMeanBurstDensity_PhasicTonic(uniqPID[i],ch_name,df_this['freqLow'].values,df_this['freqHigh'].values)
+			burstRateStates['tonic_REM'][selmask]=burstRateStates_['tonic_REM']
+			burstRateStates['phasic_REM'][selmask]=burstRateStates_['phasic_REM']
 	#add all rates to dataframe		
 	df_freqs['peakBurstRate']=peakBurstRateInBand
 	df_freqs['meanBurstRate']=burstRateInBand
-	for state in ['wake','REM','NREM']:
+	for state in ['wake','REM','NREM','tonic_REM','phasic_REM']:
 		df_freqs['meanBurstRate_%s'%state]=burstRateStates[state]
 	return df_freqs
 	

@@ -18,8 +18,7 @@ from core.helpers import *
 from burst.coreFunctions import *
 from coreFunctions import *
 from psd.waveletTransform import compute_wavelet_transform
-
-
+from burst.burstRatePhasicTonic import plotBurstRateRatioGroupLevel
 import matplotlib.gridspec as gridspec
 
 import matplotlib
@@ -361,20 +360,28 @@ def plotFigure3():
 
 
 	#plot summary of statistics
-	ax_stats_REM=fig.add_subplot(gs[4, 0:8])	
-	ax_stats_REM.set_title("(D) Correlation between burst and rapid eye movements",loc='left',fontdict={'fontweight':'bold','fontsize':10})
+	ax_stats_REM=fig.add_subplot(gs[4, 0:5])	
+	ax_stats_REM.set_title("(D) Correlation between\n  burst and rapid EMs",loc='left',fontdict={'fontweight':'bold','fontsize':10})
 	plotStatsSummary(ax_stats_REM,state='REM')	
 	
 	
 	#plot subject level curves
-	ax_avgperi_REM=fig.add_subplot(gs[4, 9:17])
-	ax_avgperi_REM.set_title("(E) Average subject-level probabilities (REM)",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
+	ax_avgperi_REM=fig.add_subplot(gs[4, 6:12])
+	ax_avgperi_REM.set_title("(E) Average subject-level probabilities",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
 	plotAveragePeriEvent(ax_avgperi_REM,state='REM')	
 	
-	plt.savefig("figures/figure3.png",bbox_inches='tight',dpi=600)
+	ax_phasic_tonic=fig.add_subplot(gs[4, 13:17])
+	ax_phasic_tonic.set_title("(F) Burst rates in\n phasic and tonic REM",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
+	plotBurstRateRatioGroupLevel('gamma',ax_phasic_tonic)
+	plt.savefig("figures/figure3.pdf",bbox_inches='tight',dpi=600)
 	
-
-
+'''
+ax_avgperi_wake=plt.subplot(111)
+ax_avgperi_wake.set_title("Average subject-level probabilities (wake)",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
+plotAveragePeriEvent(ax_avgperi_wake,state='wake')	
+plt.show()	
+'''
+#plt.savefig("figures/figure3.pdf",bbox_inches='tight',dpi=600)
 plotFigure3()
 
 '''

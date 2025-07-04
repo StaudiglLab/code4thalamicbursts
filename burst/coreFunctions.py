@@ -1,4 +1,5 @@
 import os
+import time
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
 import git,sys
 repo = git.Repo('.', search_parent_directories=True)
@@ -10,7 +11,7 @@ import matplotlib.pyplot as plt
 import scipy
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy.signal import find_peaks
-
+from scipy.interpolate import interp1d
 
 from core import *
 from core.helpers import *
@@ -18,6 +19,50 @@ from core.helpers import *
 import pandas as pd
 from joblib import Parallel, delayed
 from numba import prange
+
+
+@njit
+def getClustersFromMask(mask):
+	mask=mask.astype("int")
+	if(np.mean(mask)==1.0):
+		return np.array([0]),np.array([len(mask)])
+	elif(np.mean(mask)==0.0):
+		return np.array([0]),np.array([0])
+	ediff=(mask[1:]-mask[:-1])#np.ediff1d(mask.astype("int"))
+	startIndx=np.arange(len(ediff))[ediff>0]
+	stopIndx=np.arange(len(ediff))[ediff<0]
+	if(len(startIndx)<len(stopIndx) or (len(stopIndx)>0 and startIndx[0]>stopIndx[0])):
+		startIndx=np.append([-1],startIndx)
+	if(len(startIndx)>len(stopIndx)):
+		stopIndx=np.append(stopIndx,len(ediff))
+	return startIndx+1,stopIndx-startIndx
+
+def getPhasicTonicLabels(pID,segmentDurationInSec=4):
+	timeSS,sleepScore=readSleepScoreFinal(pID)
+	timeOneSec=np.arange(timeSS[0],timeSS[-1])
+	sleepScore1s=interp1d(timeSS,sleepScore,kind='nearest')(timeOneSec)
+	eyeMovementCounts=np.zeros(len(timeOneSec))
+	eyeMovementInterval=np.zeros(len(timeOneSec))
+
+	eyeMovParams=pd.read_csv(rootdir+"/eyeMovParams/%s_eyeMovEvents_alldetections.csv"%pID)
+	eyeMovParams=eyeMovParams.sort_values('onsetIndex')
+	eyeMovTime=eyeMovParams['onsetIndex'].values.astype("int")/200.0
+	
+	startIndx,width=getClustersFromMask(sleepScore1s==5)	
+	#print("Number of REM clusters:%d"%len(startIndx))
+	for iCluster in range(len(startIndx)):        
+		#going through each cluster of REM sleep
+		for index in range(startIndx[iCluster],startIndx[iCluster]+width[iCluster],segmentDurationInSec):
+			#counting eye movements and computing interval between REMs
+			eyeMovInBlock=eyeMovTime[np.logical_and(eyeMovTime>timeOneSec[index],eyeMovTime<timeOneSec[index]+segmentDurationInSec)]
+			eyeMovementCounts[index:index+segmentDurationInSec]=len(eyeMovInBlock)
+			if(len(eyeMovInBlock)>=2):
+			    eyeMovementInterval[index:index+segmentDurationInSec]=np.min(eyeMovInBlock[1:]-eyeMovInBlock[:-1])				
+	#definition following Simor group	
+	sleepScore1s[np.logical_and(eyeMovementCounts>=2,sleepScore1s==5)]=10	 #phasic REM	
+	sleepScore1s[np.logical_and(eyeMovementCounts==0,sleepScore1s==5)]=15           #tonic REM
+	return timeOneSec,sleepScore1s
+			
 
 
 #get bootstrapped realizations of mean burst rate curve
@@ -142,8 +187,14 @@ def getSelectedBursts(pID,
 		
 		
 #function to determine 2D burst rate
-def getBurstRate2D(pID,ch_name,smoothWindowInHz,sfreq=200.0):
-	taxis,sleepScore=readSleepScoreFinal(pID)
+def getBurstRate2D(pID,ch_name,smoothWindowInHz,sfreq=200.0,
+				   whichSleepScore='standard' #standard is 30s sleep scoring
+				   							  #phasic_tonic is 1s interval sleep score, with 4s REM segments defined as phasic or tonic
+				   ):
+	if(whichSleepScore=='standard'):
+		taxis,sleepScore=readSleepScoreFinal(pID)
+	elif(whichSleepScore=='phasic_tonic'):
+		taxis,sleepScore=getPhasicTonicLabels(pID)
 	#load burst positions	
 	peakFreq,startFreq,stopFreq,peakTimeIndx,startTimeIndx,stopTimeIndx,peakAmp,sleepScoreAtBurst=np.loadtxt(rootdir+"/burstFromMorlet/%s_%s_selected.txt"%(pID,ch_name),unpack=True)
 	
@@ -151,7 +202,7 @@ def getBurstRate2D(pID,ch_name,smoothWindowInHz,sfreq=200.0):
 	
 	#bin every 30seconds to get burst 2D rate
 	burstRate,xedge,freqs=np.histogram2d(peakTimeIndx/sfreq,peakFreq,bins=(np.append(taxis,[taxis[-1]+30]),freqaxis))
-	burstRate=burstRate.T*2 #per min
+	burstRate=burstRate.T*(60.0/(taxis[1]-taxis[0])) #per min
 	freqs=(freqs[1:]+freqs[:-1])/2.	
 	
 	#smooth burst rate by gaussian kernal
@@ -160,7 +211,6 @@ def getBurstRate2D(pID,ch_name,smoothWindowInHz,sfreq=200.0):
 		burstRate=scipy.ndimage.gaussian_filter(burstRate,(sigma,0),mode='nearest',truncate=5.0)
 
 	return taxis,freqs,burstRate,sleepScore
-
 
 #function to get burst density in bands
 def getMeanBurstDensity(pID,
@@ -192,7 +242,32 @@ def getMeanBurstDensity(pID,
 				peakBurstRateInBand[i]=np.max(rateThis)
 				burstRateInBand[i]=np.sum(rateThis)
 				
-	return 	peakBurstRateInBand,burstRateInBand,burstRateStates    
+	return 	peakBurstRateInBand,burstRateInBand,burstRateStates 
+
+#function to get burst density in bands
+def getMeanBurstDensity_PhasicTonic(pID,
+		ch_name,
+		freqLow, # lower edge of band
+		freqHigh, #higher edge of band
+		sfreq=200.0
+		):
+		
+	
+	burstRateStates={'phasic_REM':np.zeros(len(freqLow)),'tonic_REM':np.zeros(len(freqLow))}
+	#get 2D burst rate (without spectral smoothing to make sure one is only counting bursts within the band)
+	taxis,freqs,burstRate,sleepScore=getBurstRate2D(pID,ch_name,sfreq=sfreq,smoothWindowInHz=None,whichSleepScore='phasic_tonic')
+	
+	#get mean burst rate curve in each brain state
+	burstRateMean={'phasic_REM':np.mean(burstRate[:,sleepScore==10],axis=1),
+			'tonic_REM':np.mean(burstRate[:,sleepScore==15],axis=1)}
+	
+	#get burst densities
+	for i in range(0,len(freqLow)):	
+		for state in ['phasic_REM','tonic_REM']:
+			rateThis=burstRateMean[state][np.logical_and(freqs>=freqLow[i],freqs<=freqHigh[i])]
+			burstRateStates[state][i]=np.sum(rateThis)			
+				
+	return 	burstRateStates    
 	
 
 
