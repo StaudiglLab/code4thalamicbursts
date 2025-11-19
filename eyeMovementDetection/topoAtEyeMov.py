@@ -91,5 +91,5 @@ for i in range(0,len(cohortForPaper)):
 	im=plotTopoMap(cohortForPaper[i],ax)
 
 plt.colorbar(im,cax=fig.add_subplot(gs[3,2:4]),label='average deflection (microVolts)',orientation='horizontal')
-plt.savefig("figures/edf5.pdf",bbox_inches='tight')
+plt.savefig("figures/EMtopo.pdf",bbox_inches='tight')
 

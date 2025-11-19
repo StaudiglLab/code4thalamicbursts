@@ -212,6 +212,24 @@ def getBurstRate2D(pID,ch_name,smoothWindowInHz,sfreq=200.0,
 
 	return taxis,freqs,burstRate,sleepScore
 
+#function to determine 1D burst rate
+def getBurstRate1D(pID,ch_name,freqRange,tBinInSec=1,sfreq=200.0,
+				   whichSleepScore='standard' #standard is 30s sleep scoring
+				   							  #phasic_tonic is 1s interval sleep score, with 4s REM segments defined as phasic or tonic
+				   ):
+	if(whichSleepScore=='standard'):
+		taxisSS,sleepScore=readSleepScoreFinal(pID)
+	elif(whichSleepScore=='phasic_tonic'):
+		taxisSS,sleepScore=getPhasicTonicLabels(pID)
+	#load burst positions	
+	peakFreq,startFreq,stopFreq,peakTimeIndx,startTimeIndx,stopTimeIndx,peakAmp,sleepScoreAtBurst=np.loadtxt(rootdir+"/burstFromMorlet/%s_%s_selected.txt"%(pID,ch_name),unpack=True)
+	selmask=np.logical_and(peakFreq>freqRange[0],peakFreq<=freqRange[1])
+	burstRate,taxis=np.histogram(peakTimeIndx[selmask]/sfreq,bins=np.arange(taxisSS[0],taxisSS[-1],tBinInSec))
+	taxis=(taxis[1:]+taxis[:-1])/2.
+	sleepScore=interp1d(taxisSS,sleepScore,kind='nearest')(taxis)
+
+	return taxis,burstRate,sleepScore		
+
 #function to get burst density in bands
 def getMeanBurstDensity(pID,
 		ch_name,
@@ -223,7 +241,7 @@ def getMeanBurstDensity(pID,
 		
 	peakBurstRateInBand=np.zeros(len(states))
 	burstRateInBand=np.zeros(len(states))	
-	burstRateStates={'wake':np.zeros(len(states)),'REM':np.zeros(len(states)),'NREM':np.zeros(len(states))}
+	burstRateStates={'wake':np.zeros(len(states)),'REM':np.zeros(len(states)),'NREM':np.zeros(len(states)),'N2':np.zeros(len(states)),'N3':np.zeros(len(states))}
 	
 	#get 2D burst rate (without spectral smoothing to make sure one is only counting bursts within the band)
 	taxis,freqs,burstRate,sleepScore=getBurstRate2D(pID,ch_name,sfreq=sfreq,smoothWindowInHz=None)
@@ -231,11 +249,13 @@ def getMeanBurstDensity(pID,
 	#get mean burst rate curve in each brain state
 	burstRateMean={'wake':np.mean(burstRate[:,sleepScore==0],axis=1),
 			'REM':np.mean(burstRate[:,sleepScore==5],axis=1),
-			'NREM':np.mean(burstRate[:,np.logical_or(sleepScore==2,sleepScore==3)],axis=1)}
+			'NREM':np.mean(burstRate[:,np.logical_or(sleepScore==2,sleepScore==3)],axis=1),
+			'N2':np.mean(burstRate[:,sleepScore==2],axis=1),
+			'N3':np.mean(burstRate[:,sleepScore==3],axis=1)}
 	
 	#get burst densities
 	for i in range(0,len(peakBurstRateInBand)):				
-		for state in ['wake','REM','NREM']:
+		for state in ['wake','REM','NREM','N2','N3']:
 			rateThis=burstRateMean[state][np.logical_and(freqs>=freqLow[i],freqs<=freqHigh[i])]
 			burstRateStates[state][i]=np.sum(rateThis)
 			if(state==states[i]):

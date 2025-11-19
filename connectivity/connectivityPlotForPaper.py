@@ -26,31 +26,53 @@ def readMeanConnectivity(pID,
 			ch_name_thal,	#thalamic channel
 			ch_names_scalp, #scalp channels
 			state,		#brain state
+			whichMetric='wPLI', #pli or GC
 			ref='Cpz'	#reference
 			):
 	#dummy load to get shape of array
-	freqs,pli=np.loadtxt(rootdir+"/connectivity/pli_%s_%s-%s_%s_ref%s.txt"%(pID,ch_name_thal,ch_names_scalp[0],state,ref),usecols=[0,2],unpack=True)
-	pli_all=np.zeros((len(ch_names_scalp),len(freqs)))
-	#iterate over all channels
-	for iChan in range(len(ch_names_scalp)):
-		freqs,pli_all[iChan,:]=np.loadtxt(rootdir+"/connectivity/pli_%s_%s-%s_%s_ref%s.txt"%(pID,ch_name_thal,ch_names_scalp[iChan],state,ref),usecols=[0,2],unpack=True)
-	return freqs,np.mean(pli_all,axis=0)	
+	if(whichMetric=='wPLI'):
+		freqs,pli=np.loadtxt(rootdir+"/connectivity/pli_%s_%s-%s_%s_ref%s.txt"%(pID,ch_name_thal,ch_names_scalp[0],state,ref),usecols=[0,2],unpack=True)
+		conn_all=np.zeros((len(ch_names_scalp),len(freqs)))
+		#iterate over all channels
+		for iChan in range(len(ch_names_scalp)):
+			freqs,conn_all[iChan,:]=np.loadtxt(rootdir+"/connectivity/pli_%s_%s-%s_%s_ref%s.txt"%(pID,ch_name_thal,ch_names_scalp[iChan],state,ref),usecols=[0,2],unpack=True)
+		conn_all=np.abs(conn_all)
+	else:
+		
+		df_gc=pd.read_csv(rootdir+"/connectivity/gc_%s_%s_%s_ref%s.csv"%(pID,ch_name_thal,state,ref))
+		freqs=df_gc['freqs'].values
+		conn_all=np.zeros((len(ch_names_scalp),len(freqs)))
+		#iterate over all channels
+		for iChan in range(len(ch_names_scalp)):
+			ch_name=ch_names_scalp[iChan]
+			if(whichMetric=='gc'):
+				conn_all[iChan,:]=(df_gc['gc_%s->%s'%(ch_name_thal,ch_name)]-df_gc['gc_%s->%s'%(ch_name,ch_name_thal)].values)
+			elif(whichMetric=='gc_tr'):
+				conn_all[iChan,:]=(df_gc['gc_%s->%s'%(ch_name_thal,ch_name)]-df_gc['gc_%s->%s'%(ch_name,ch_name_thal)].values)-(df_gc['gctr_%s->%s'%(ch_name_thal,ch_name)]-df_gc['gctr_%s->%s'%(ch_name,ch_name_thal)]).values
+
+	return freqs,np.mean(conn_all,axis=0)	
 	
 #function to get frequency resolved connectivity metric
 #after aligning to the peak frequency of each band
 def getConnectivityInBand(band,
 			reference,
-			subjectlevel=True #get subject level average
+			combineLeftAndRight=False,
+			subjectlevel=True, #get subject level average
+			whichMetric='pli'
 			):
 	#load dataframe with bands
 	if(band=='spindle'):
 		df_bands=getSignificantBands('spindleInGammaChannels')
 	else:
 		df_bands=getSignificantBands(band)
-		
+
 	#define states and electrode groups
 	states=['wake','REM','NREM']
-	electrodeGroups={'Frontal L':['Fp1','F7'],'Frontal R':['Fp2','F8'],'Central L':['T7','P7'],'Central R':['T8','P8'],'Occipital L':['O1'],'Occipital R':['O2']}
+	if(combineLeftAndRight):
+		electrodeGroups={'Frontal':['Fp1','F7','Fp2','F8'],'Central':['T7','P7','T8','P8'],'Occipital':['O1','O2']}
+	else:
+		electrodeGroups={'Frontal L':['Fp1','F7'],'Frontal R':['Fp2','F8'],'Central L':['T7','P7'],'Central R':['T8','P8'],'Occipital L':['O1'],'Occipital R':['O2']}
+		
 	electrodeGroupNames=list(electrodeGroups)
 	
 	#common frequency axis to align and interpolate onto
@@ -65,11 +87,11 @@ def getConnectivityInBand(band,
 		indx=df_bands.index[i]
 		pID=df_bands.loc[indx,'pID']
 		if(pID=='p20' or pID=='p26'):
-			electrodeGroups['Frontal L']=['F7']
-			electrodeGroups['Frontal R']=['F8']
-		else:
-			electrodeGroups['Frontal L']=['Fp1','F7']
-			electrodeGroups['Frontal R']=['Fp2','F8']
+			if(combineLeftAndRight):
+				electrodeGroups['Frontal']=['F7','F8']
+			else:
+				electrodeGroups['Frontal L']=['F7']
+				electrodeGroups['Frontal R']=['F8']
 
 		freqLow=df_bands.loc[indx,'freqLow']
 		freqHigh=df_bands.loc[indx,'freqHigh']
@@ -80,9 +102,10 @@ def getConnectivityInBand(band,
 						ch_name_thal=df_bands.loc[indx,'ch_name'],
 						ch_names_scalp=electrodeGroups[electrodeGroupNames[iGroup]],
 						state=states[iState],
-						ref=reference)
+						ref=reference,
+						whichMetric=whichMetric)
 				#interpolate to common frequency axes
-				connectivityBands[i,iGroup,iState]=np.interp(freqAxisCommon,freqs-df_bands.loc[indx,'freqPeak'],np.abs(conn))
+				connectivityBands[i,iGroup,iState]=np.interp(freqAxisCommon,freqs-df_bands.loc[indx,'freqPeak'],conn)
 				
 	#perform subject level average, if asked for
 	if(subjectlevel):
@@ -98,7 +121,7 @@ def getConnectivityInBand(band,
 
 #function to get mean connectivity metric in each band
 #after aligning to the peak frequency of each band	
-def getConnectivityInBandMean(band,reference):
+def getConnectivityInBandMean(band,reference,whichMetric):
 	#load dataframe with bands
 	if(band=='spindle'):
 		df_bands=getSignificantBands('spindleInGammaREMChannels')
@@ -106,7 +129,7 @@ def getConnectivityInBandMean(band,reference):
 		df_bands=getSignificantBands(band)
 	#define states and electrode groups
 	states=['wake','NREM','REM']
-	electrodeGroups={'Frontal_L':['Fp1','F7'],'Frontal_R':['Fp2','F8'],'Central_L':['T7','P7'],'Central_R':['T8','P8'],'Occipital_L':['O1'],'Occipital_R':['O2']}
+	electrodeGroups={'All_L':['Fp1','F7','T7','P7','O1'],'All_R':['Fp2','F8','T8','P8','O2'],'Frontal_L':['Fp1','F7'],'Frontal_R':['Fp2','F8'],'Central_L':['T7','P7'],'Central_R':['T8','P8'],'Occipital_L':['O1'],'Occipital_R':['O2']}
 
 	#add variables to dataframe where average metrics would be saved
 	for state in states:
@@ -118,12 +141,10 @@ def getConnectivityInBandMean(band,reference):
 	for indx in df_bands.index:
 		pID=df_bands.loc[indx,'pID']
 		if(pID=='p20' or pID=='p26'):
-			electrodeGroups['Frontal_L']=['F7']
-			electrodeGroups['Frontal_R']=['F8']
-		else:
-			electrodeGroups['Frontal_L']=['Fp1','F7']
-			electrodeGroups['Frontal_R']=['Fp2','F8']
-		
+			electrodeGroups['Frontal_L'].remove('Fp1')
+			electrodeGroups['Frontal_R'].remove('Fp2')
+			electrodeGroups['All_L'].remove('Fp1')
+			electrodeGroups['All_R'].remove('Fp2')
 		freqLow=df_bands.loc[indx,'freqLow']
 		freqHigh=df_bands.loc[indx,'freqHigh']
 		#loop over all states and electrode groups
@@ -133,10 +154,11 @@ def getConnectivityInBandMean(band,reference):
 						ch_name_thal=df_bands.loc[indx,'ch_name'],
 						ch_names_scalp=electrodeGroups[group],
 						state=state,
+						whichMetric=whichMetric,
 						ref=reference)
 				#take average over frequency band
-				meanConn=np.mean(np.abs(conn)[np.logical_and(freqs>=freqLow,freqs<=freqHigh)])				
-				df_bands.loc[indx,'pli_%s_%s'%(group,state)]=meanConn							
+				meanConn=np.mean(conn[np.logical_and(freqs>=freqLow,freqs<=freqHigh)])			
+				df_bands.loc[indx,'conn_%s_%s'%(group,state)]=meanConn	
 	return df_bands
 
 
@@ -148,6 +170,7 @@ def getConnectivityInBandMean(band,reference):
 #plot group level distribution
 def plotDistributionAndDoStats(df_conn_group, #data frame containing average connectivity metrics
 			ax,	#matplotlib axes to draw on
+			sigBarLevels=[0.31,0.3],
 			colors=['C0','C2'],
 			alpha=[1,1]):
 	electrodeGroups=['Frontal','Central','Occipital']
@@ -159,26 +182,26 @@ def plotDistributionAndDoStats(df_conn_group, #data frame containing average con
 		group=electrodeGroups[iGroup]				
 		for i in range(len(df_conn_group)):
 			indx=df_conn_group.index[i]
-			binWake_REM[iGroup,i]=(df_conn_group.loc[indx,'pli_%s_%s_%s'%(group,'ipsi','wake/REM')]+df_conn_group.loc[indx,'pli_%s_%s_%s'%(group,'contra','wake/REM')])/2.0
-			binNREM[iGroup,i]=(df_conn_group.loc[indx,'pli_%s_%s_%s'%(group,'ipsi','NREM')]+df_conn_group.loc[indx,'pli_%s_%s_%s'%(group,'contra','NREM')])/2.0
-		
+			binWake_REM[iGroup,i]=(df_conn_group.loc[indx,'conn_%s_%s_%s'%(group,'ipsi','wake/REM')]+df_conn_group.loc[indx,'conn_%s_%s_%s'%(group,'contra','wake/REM')])/2.0
+			binNREM[iGroup,i]=(df_conn_group.loc[indx,'conn_%s_%s_%s'%(group,'ipsi','NREM')]+df_conn_group.loc[indx,'conn_%s_%s_%s'%(group,'contra','NREM')])/2.0
 		
 		dataStacked=(np.column_stack((binWake_REM[iGroup],binNREM[iGroup])))
 		stats=scipy.stats.wilcoxon(binWake_REM[iGroup],binNREM[iGroup])
-		print(group,stats)
+		print(group,stats.statistic,stats.pvalue*(len(electrodeGroups)))
+		loc=np.max(dataStacked)
 		#plot line to indicate significance
-		if(stats.pvalue<0.05/(2*len(electrodeGroups))): #correcting for multiple comparisions
-			ax.text(iGroup*2,0.31,"*")
-			ax.plot(iGroup*2+np.array([-0.5,0.5]),[0.3,0.3],c='black')
+		if(stats.pvalue<0.05/(len(electrodeGroups))): #correcting for multiple comparisions
+			
+			ax.text(iGroup*2,sigBarLevels[0],"*")
+			ax.plot(iGroup*2+np.array([-0.5,0.5]),np.array([sigBarLevels[1],sigBarLevels[1]]),c='black')
 		#make boxplots
 		ax.plot(iGroup*2+np.array([-0.5,0.5]),dataStacked.T,c='gray',marker='o',alpha=0.5,ms=1)
 		ax.boxplot(binWake_REM[iGroup],positions=[iGroup*2-0.5],widths=0.75,patch_artist=True,medianprops = dict(color='black'),boxprops  = dict(color='black',facecolor=colors[0],alpha=alpha[0]),showfliers=False)		
 		ax.boxplot(binNREM[iGroup],positions=[iGroup*2+0.5],widths=0.75,patch_artist=True,medianprops = dict(color='black'),boxprops  = dict(color='black',facecolor=colors[1],alpha=alpha[1]),showfliers=False)
-		ax.set_xticks(np.arange(0,3)*2,electrodeGroups)
-		ax.set_ylim((10**-2.5,0.55))
+		ax.set_xticks(np.arange(0,len(electrodeGroups))*2,electrodeGroups)
+		#ax.set_ylim((10**-2.5,0.55))
 	
-	ax.set_ylabel("wPLI")
-	ax.set_yscale("log")
+	
 
 	#plot legends
 	labels=['wakefullness and REM sleep','NREM sleep']	
@@ -186,11 +209,10 @@ def plotDistributionAndDoStats(df_conn_group, #data frame containing average con
 	patch2 = mpatches.Patch(color=colors[1], label=labels[1])	
 	ax.legend(handles=[patch1,patch2])
 	return binWake_REM,binNREM			
-def connectivityGroupAnalysis(axs,band,reference):
-	df_conn=getConnectivityInBandMean(band=band,reference=reference)
-	electrodeGroups=['Frontal','Central','Occipital']
+def connectivityGroupAnalysis(axs,band,reference,whichMetric):
+	df_conn=getConnectivityInBandMean(band=band,reference=reference,whichMetric=whichMetric)
+	electrodeGroups=['Frontal','Central','Occipital','All']
 	hemis=['ipsi','contra']
-	
 	#group connectivity by hemisphere and combine wake and REM into one.
 	for indx in df_conn.index:
 		ipsi=df_conn.loc[indx,'ch_name'][0]
@@ -201,10 +223,10 @@ def connectivityGroupAnalysis(axs,band,reference):
 			hemiMap['contra']='L'			
 		for group in electrodeGroups:
 			for hemi in hemis:
-				df_conn.loc[indx,'pli_%s_%s_wake/REM'%(group,hemi)]=(df_conn.loc[indx,'pli_%s_%s_%s'%(group,hemiMap[hemi],'wake')]
-										+df_conn.loc[indx,'pli_%s_%s_%s'%(group,hemiMap[hemi],'REM')])/2.
-				df_conn.loc[indx,'pli_%s_%s_NREM'%(group,hemi)]=df_conn.loc[indx,'pli_%s_%s_%s'%(group,hemiMap[hemi],'NREM')]	
-	
+				df_conn.loc[indx,'conn_%s_%s_wake/REM'%(group,hemi)]=(df_conn.loc[indx,'conn_%s_%s_%s'%(group,hemiMap[hemi],'wake')]
+										+df_conn.loc[indx,'conn_%s_%s_%s'%(group,hemiMap[hemi],'REM')])/2.
+				df_conn.loc[indx,'conn_%s_%s_NREM'%(group,hemi)]=df_conn.loc[indx,'conn_%s_%s_%s'%(group,hemiMap[hemi],'NREM')]	
+				
 
 	#get group level connecitivity metrics
 	df_conn_group=pd.DataFrame()	
@@ -217,12 +239,16 @@ def connectivityGroupAnalysis(axs,band,reference):
 		for group in electrodeGroups:
 			for hemi in hemis:
 				selmask=df_conn['pID']==uniqPID[i]
-				df_conn_group.loc[i,'pli_%s_%s_wake/REM'%(group,hemi)]=np.mean(df_conn.loc[selmask]['pli_%s_%s_wake/REM'%(group,hemi)])
-				df_conn_group.loc[i,'pli_%s_%s_NREM'%(group,hemi)]=np.mean(df_conn.loc[selmask]['pli_%s_%s_NREM'%(group,hemi)])
+				df_conn_group.loc[i,'conn_%s_%s_wake/REM'%(group,hemi)]=np.mean(df_conn.loc[selmask]['conn_%s_%s_wake/REM'%(group,hemi)])
+				df_conn_group.loc[i,'conn_%s_%s_NREM'%(group,hemi)]=np.mean(df_conn.loc[selmask]['conn_%s_%s_NREM'%(group,hemi)])
 
 	
 	#plot Distribution
-	binWake_REM,binNREM=plotDistributionAndDoStats(df_conn_group,ax=axs,colors=[sns.color_palette()[0],sns.color_palette()[2]],alpha=[1,1])
+	if(whichMetric=='wPLI'):
+		sigBarLevels=[0.31,0.3]
+	else:
+		sigBarLevels=[0.013,0.012]
+	binWake_REM,binNREM=plotDistributionAndDoStats(df_conn_group,sigBarLevels=sigBarLevels,ax=axs,colors=[sns.color_palette()[0],sns.color_palette()[2]],alpha=[1,1])
 	
 	
 	#check for significant differences amongst groups
@@ -230,7 +256,7 @@ def connectivityGroupAnalysis(axs,band,reference):
 		data=binWake_REM
 	elif(band=='spindle'):
 		data=binNREM
-	
+	'''
 	iSig=0
 	for iGroup in range(len(electrodeGroups)):
 		for jGroup in range(iGroup+1,len(electrodeGroups)):	
@@ -243,33 +269,39 @@ def connectivityGroupAnalysis(axs,band,reference):
 				iSig+=1
 	
 	print("Number of significant differences amongst electrode groups: %d"%iSig)
-
+	'''
 #plot average time resolved connectivity
 def plotConnectivityRelFreq(axs,	#matplotlib axes to draw on
 			band,		#frequency band (gamma or spindle)
-			reference	#reference channel
+			reference,	#reference channel
+			combineLeftAndRight=False,
+			whichMetric='pli'
 			):
 			
-	df_bands,freqAxisCommon,electrodeGroupNames,states,connectivityBands=getConnectivityInBand(band=band,reference=reference)
+	df_bands,freqAxisCommon,electrodeGroupNames,states,connectivityBands=getConnectivityInBand(band=band,reference=reference,combineLeftAndRight=combineLeftAndRight,whichMetric=whichMetric)
 	#plot group level mean and S.E.M for each band
 	contactMean=np.mean(connectivityBands,axis=0)
 	contactStd=np.std(connectivityBands,axis=0)/np.sqrt(connectivityBands.shape[0])
 	for iGroup in range(0,len(electrodeGroupNames)):
 		for iState in range(len(states)):
+			
 			axs[iGroup].text(0.02,0.9,electrodeGroupNames[iGroup],transform=axs[iGroup].transAxes,fontsize=10)
 			axs[iGroup].plot(freqAxisCommon,contactMean[iGroup,iState],c='C%d'%iState)
 			axs[iGroup].fill_between(freqAxisCommon,contactMean[iGroup,iState]-contactStd[iGroup,iState],contactMean[iGroup,iState]+contactStd[iGroup,iState],fc='C%d'%iState,alpha=0.5)
-
-def EDF3():
+			axs[iGroup].set_xlim((freqAxisCommon[0],freqAxisCommon[-1]))
+			axs[iGroup].minorticks_on()
+def EDF2(whichMetric='wPLI'):
 	fig = plt.figure(figsize=(14, 12))
 	gs = fig.add_gridspec(4,9,height_ratios=[2,1,1,1])
 	fig.subplots_adjust(hspace=0.3)
-	
+
 	
 	ax_mean_gamma=fig.add_subplot(gs[0,:4])
-	connectivityGroupAnalysis(ax_mean_gamma,'gamma','Cpz')
+	print('gamma')
+	connectivityGroupAnalysis(ax_mean_gamma,'gamma','Cpz',whichMetric=whichMetric)
+	print('spindle')
 	ax_mean_spindle=fig.add_subplot(gs[0,5:])
-	connectivityGroupAnalysis(ax_mean_spindle,'spindle','Cpz')
+	connectivityGroupAnalysis(ax_mean_spindle,'spindle','Cpz',whichMetric=whichMetric)
 	ax_freq_gamma=[]
 	ax_freq_spindle=[]
 	
@@ -302,13 +334,79 @@ def EDF3():
 	
 	ax_mean_gamma.set_title("(A) Group Statistics for Fast Oscillations",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
 	ax_mean_spindle.set_title("(B) Group Statistics for Spindles",loc='left',fontdict={'fontweight':'bold','fontsize':10})			
-		
+	ax_mean_gamma.set_ylim((10**-2.5,0.55))	
+	ax_mean_spindle.set_ylim((10**-2.5,0.55))	
+	ax_mean_gamma.set_yscale("log")
+	ax_mean_spindle.set_yscale("log")
 	
 	ax_freq_gamma[0,0].set_title("(C) Mean wPLI for Fast Oscillations",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
 	ax_freq_spindle[0,0].set_title("(D) Mean wPLI for Spindles",loc='left',fontdict={'fontweight':'bold','fontsize':10})		
 	
 	
-	plotConnectivityRelFreq(ax_freq_gamma.flatten(),'gamma','Cpz')	
-	plotConnectivityRelFreq(ax_freq_spindle.flatten(),'spindle','Cpz')		
-	plt.savefig("figures/edf3.pdf",bbox_inches='tight',dpi=300.0)
-EDF3()
+	plotConnectivityRelFreq(ax_freq_gamma.flatten(),'gamma','Cpz',whichMetric=whichMetric)	
+	plotConnectivityRelFreq(ax_freq_spindle.flatten(),'spindle','Cpz',whichMetric=whichMetric)		
+	plt.savefig("figures/wPLI.pdf",transparent=False,bbox_inches='tight',dpi=300.0)
+
+
+def SuppInfo():
+	#fig = plt.figure(figsize=(14, 12))
+	fig = plt.figure(figsize=(7*1.5, 6*2))
+	gs = fig.add_gridspec(4,9,height_ratios=[2,1,1,1])
+	fig.subplots_adjust(hspace=0.4)
+	
+	
+	ax_mean_gamma=fig.add_subplot(gs[0,:4])
+	connectivityGroupAnalysis(ax_mean_gamma,'gamma','Cpz',whichMetric='gc')
+	ax_mean_gamma_tr=fig.add_subplot(gs[0,5:])
+	connectivityGroupAnalysis(ax_mean_gamma_tr,'gamma','Cpz',whichMetric='gc_tr')
+	ax_mean_gamma.set_ylabel("GC score")
+
+	ax_mean_gamma_tr.set_ylabel("Time-reversed GC score")
+
+	ax_freq_gamma=[]
+	ax_freq_gamma_tr=[]
+	
+	gs_sub=gs[1:, :4].subgridspec(3, 2, hspace=0.1)
+	ax_freq_gamma = gs_sub.subplots(sharex=True,sharey=True)
+	
+	gs_sub=gs[1:, 5:].subgridspec(3, 2, hspace=0.1)
+	ax_freq_gamma_tr = gs_sub.subplots(sharex=True,sharey=True)
+	
+	
+	ax_freq_gamma[0,0].set_ylabel("GC score")
+	ax_freq_gamma[1,0].set_ylabel("GC score")
+	ax_freq_gamma[2,0].set_ylabel("GC score")	
+	ax_freq_gamma[2,0].set_xlabel("Frequency (Hz)")	
+	ax_freq_gamma[2,1].set_xlabel("Frequency (Hz)")	
+	ax_freq_gamma[0,0].set_xlim((-6,6))
+		
+	ax_freq_gamma_tr[0,0].set_ylabel("Time-reversed GC score")
+	ax_freq_gamma_tr[1,0].set_ylabel("Time-reversed GC score")
+	ax_freq_gamma_tr[2,0].set_ylabel("Time-reversed GC score")	
+	ax_freq_gamma_tr[2,0].set_xlabel("Frequency (Hz)")	
+	ax_freq_gamma_tr[2,1].set_xlabel("Frequency (Hz)")	
+	ax_freq_gamma_tr[0,0].set_xlim((-6,6))
+	
+	ax_freq_gamma[0,0].set_xticks([-5,0,5],[r"f$_\mathrm{0}$-5 Hz", r"f$_\mathrm{0}$",r"f$_\mathrm{0}$+5 Hz"])
+	ax_freq_gamma[1,0].set_xticks([-5,0,5],[r"f$_\mathrm{0}$-5 Hz", r"f$_\mathrm{0}$",r"f$_\mathrm{0}$+5 Hz"])
+	ax_freq_gamma_tr[0,0].set_xticks([-5,0,5],[r"f$_\mathrm{0}$-5 Hz", r"f$_\mathrm{0}$",r"f$_\mathrm{0}$+5 Hz"])
+	ax_freq_gamma_tr[1,0].set_xticks([-5,0,5],[r"f$_\mathrm{0}$-5 Hz", r"f$_\mathrm{0}$",r"f$_\mathrm{0}$+5 Hz"])	
+	
+	
+	ax_mean_gamma.set_title("(A) Group Statistics for Fast Oscillations\n(Standard GC score)",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
+	ax_mean_gamma_tr.set_title("(B) Group Statistics for Fast Oscillations\n(Time-reversed GC score)",loc='left',fontdict={'fontweight':'bold','fontsize':10})			
+	ax_mean_gamma.set_ylim((-0.001,0.018))
+	ax_mean_gamma_tr.set_ylim((-0.007,0.018))
+
+	
+	ax_freq_gamma[0,0].set_title("(C) Mean GC Score for Fast Oscillations\n(Standard)",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
+	ax_freq_gamma_tr[0,0].set_title("(D) Mean GC Score for Fast Oscillations\n(Time-reversed)",loc='left',fontdict={'fontweight':'bold','fontsize':10})		
+	
+	
+	plotConnectivityRelFreq(ax_freq_gamma.flatten(),'gamma','Cpz',whichMetric='gc')	
+	plotConnectivityRelFreq(ax_freq_gamma_tr.flatten(),'gamma','Cpz',whichMetric='gc_tr')		
+	#plt.savefig("figures/supplementaryInfo1.png",transparent=False,bbox_inches='tight',dpi=300.0)
+	plt.savefig("figures/Granger.pdf",transparent=False,bbox_inches='tight',dpi=300.0)
+
+SuppInfo()
+EDF2()

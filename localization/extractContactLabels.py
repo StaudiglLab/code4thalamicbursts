@@ -50,6 +50,8 @@ def getDistanceFromNucleus(coordContacts,		 #coordinates
 	
 
 	nearestDistance=np.zeros((len(coordContacts),len(segmentationCodes)))
+	distanceToCOM=np.zeros((len(coordContacts),len(segmentationCodes)))
+
 	hasContact=np.zeros((len(coordContacts),len(segmentationCodes)),dtype=bool)
 	mask=np.zeros_like(imdata,dtype=bool)
 	#iterate over contacts
@@ -66,12 +68,12 @@ def getDistanceFromNucleus(coordContacts,		 #coordinates
 			
 			#get all distances to the nuclei voxels			
 			distanceToContact=np.linalg.norm(coord_native[:,mask]-np.expand_dims(coordContact,axis=1),axis=0)
-			
+			distanceToContact_COM=np.linalg.norm(np.mean(coord_native[:,mask],axis=1)-coordContact,axis=0)
 			#get minimum distance
 			nearestDistance[iContact,iSegment]=np.min(distanceToContact)			
-			
+			distanceToCOM[iContact,iSegment]=distanceToContact_COM
 
-	return hasContact,nearestDistance
+	return hasContact,nearestDistance,distanceToCOM
 	
 def hasContactInNucleus(pID,hemi='L',segmentationCodesForDistance=[1,2,4,6]):
 	if(pID=='p14_followup'):
@@ -93,9 +95,9 @@ def hasContactInNucleus(pID,hemi='L',segmentationCodesForDistance=[1,2,4,6]):
 	
 	#get nearest distance to nuclei
 	
-	hasContact,nearestDistance=getDistanceFromNucleus(coord,segmentationMap=imgThalParcellation,segmentationCodes=segmentationCodesForDistance)
+	hasContact,nearestDistance,distanceToCOM=getDistanceFromNucleus(coord,segmentationMap=imgThalParcellation,segmentationCodes=segmentationCodesForDistance)
 
-	return hasContact,nearestDistance
+	return hasContact,nearestDistance,distanceToCOM
 
 
 groupNames=list(groupCodes.keys())[:-1]
@@ -107,20 +109,30 @@ contacts=np.tile(['tL1','tL2','tL3','tL4','tR1','tR2','tR3','tR4'],len(cohortFor
 #get nearest distances to each nuclei
 hasContact=np.zeros((len(cohortForPaper)*8,len(segmentationCodesForDistance)),dtype=bool)
 nearestDistance=np.zeros((len(cohortForPaper)*8,len(segmentationCodesForDistance)),dtype=float)
+distanceToCOM=np.zeros((len(cohortForPaper)*8,len(segmentationCodesForDistance)),dtype=float)
+coordinates_mni=np.zeros((len(cohortForPaper)*8,3),dtype=float)
 for iSub in range(len(cohortForPaper)):
 	sl=np.s_[iSub*8:iSub*8+4]
-	hasContact[sl],nearestDistance[sl]= hasContactInNucleus(cohortForPaper[iSub],segmentationCodesForDistance=segmentationCodesForDistance,hemi='L')
+	coords=getCoordinates(cohortForPaper[iSub],whichFrame='mni')
+	hasContact[sl],nearestDistance[sl],distanceToCOM[sl]= hasContactInNucleus(cohortForPaper[iSub],segmentationCodesForDistance=segmentationCodesForDistance,hemi='L')
+	coordinates_mni[sl]=coords['L']
 	sl=np.s_[iSub*8+4:iSub*8+8]
-	hasContact[sl],nearestDistance[sl]= hasContactInNucleus(cohortForPaper[iSub],segmentationCodesForDistance=segmentationCodesForDistance,hemi='R')
-
+	hasContact[sl],nearestDistance[sl],distanceToCOM[sl]= hasContactInNucleus(cohortForPaper[iSub],segmentationCodesForDistance=segmentationCodesForDistance,hemi='R')
+	coordinates_mni[sl]=coords['R']
+	
 #save output to dataframe
 df = pd.DataFrame()
 df['pID']=subjects
 df['contacts']=contacts
+df['MNI_X']=coordinates_mni[:,0]
+df['MNI_Y']=coordinates_mni[:,1]
+df['MNI_Z']=coordinates_mni[:,2]
+
 for i in range(0,len(segmentationCodesForDistance)):
 	groupN=groupNames[segmentationCodesForDistance[i]-1]
 	df["%s"%groupN]=hasContact[:,i]	
 	df["%s_%s"%(groupN,'distNearest')]=nearestDistance[:,i]	
+	df["%s_%s"%(groupN,'distCOM')]=distanceToCOM[:,i]	
 df.to_csv("contacts_freesurfer.txt",sep=' ')	
 
 

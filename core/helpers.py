@@ -9,6 +9,21 @@ from seaborn import violinplot
 from .params import *
 import scipy
 
+@njit
+def getClustersFromMask(mask):
+	mask=mask.astype("int")
+	if(np.mean(mask)==1.0):
+		return np.array([0]),np.array([len(mask)])
+	elif(np.mean(mask)==0.0):
+		return np.array([0]),np.array([0])
+	ediff=(mask[1:]-mask[:-1])#np.ediff1d(mask.astype("int"))
+	startIndx=np.arange(len(ediff))[ediff>0]
+	stopIndx=np.arange(len(ediff))[ediff<0]
+	if(len(startIndx)<len(stopIndx) or (len(stopIndx)>0 and startIndx[0]>stopIndx[0])):
+		startIndx=np.append([-1],startIndx)
+	if(len(startIndx)>len(stopIndx)):
+		stopIndx=np.append(stopIndx,len(ediff))
+	return startIndx+1,stopIndx-startIndx
 
 #function to get referenced scalp data
 def getScalpData(pID,ch_name_select,ref='Cpz'):

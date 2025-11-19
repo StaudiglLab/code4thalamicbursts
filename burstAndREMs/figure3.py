@@ -18,12 +18,53 @@ from core.helpers import *
 from burst.coreFunctions import *
 from coreFunctions import *
 from psd.waveletTransform import compute_wavelet_transform
-from burst.burstRatePhasicTonic import plotBurstRateRatioGroupLevel
 import matplotlib.gridspec as gridspec
 
 import matplotlib
 
 matplotlib.rcParams['axes.prop_cycle'] = matplotlib.cycler(color=sns.color_palette("deep")) 
+
+#plot ratio of burst rates in bands at the group level
+def plotBurstRateRatioGroupLevel(band,ax):
+	df_gamma=getSignificantBands(which=band) 
+	
+	pID=df_gamma['pID'].values
+	pID[pID=='p14_followup']='p14'
+	df_gamma['pID']=pID
+	uniqPID=np.unique(pID)
+	states=['wake','NREM','phasic_REM','tonic_REM']
+	burstRates_subj=np.zeros((len(uniqPID),len(states)))
+	nSubj=len(uniqPID)
+	
+	for iPID in range(0,len(uniqPID)):
+		for iState in range(0,len(states)):
+			burstRates_subj[iPID,iState]=np.mean(df_gamma['meanBurstRate_%s'%states[iState]][df_gamma['pID']==uniqPID[iPID]])
+	#print(burstRates_subj)
+	burstRates_subj=np.log10(burstRates_subj)
+	colors=[sns.color_palette("deep")[0],sns.color_palette("deep")[2],sns.color_palette("deep")[1],sns.color_palette("deep")[3]]
+	violin=sns.violinplot(burstRates_subj,palette=colors,ax=ax,cut=0,alpha=0.75,width=0.5)
+
+	for i in range(0,len(uniqPID)):
+		ax.plot(np.arange(len(states)),(burstRates_subj[i]),c='gray',lw=1,marker='o',ms=1,zorder=-999)
+	start=1.9
+	spacing=0.07
+	
+    #plotting significant effects
+	#the significance was obtained from the code groupStats.py
+	ax.text(0.50,0.05,r"N$_\mathrm{subjects}=%d$"%nSubj,transform=ax.transAxes)
+	
+	ax.plot([0,1],[start,start],c='black',marker='|')
+	ax.plot([0,3],[start+spacing,start+spacing],c='black',marker='|')
+
+	ax.plot([1,2],[start+2*spacing,start+2*spacing],c='black',marker='|')
+	ax.plot([1,3],[start+3*spacing,start+3*spacing],c='black',marker='|')    
+	ax.plot([2,3],[start+4*spacing,start+4*spacing],c='black',marker='|')
+	
+	ax.set_ylabel("Burst Rate (/min)")
+	ax.set_yticks([0,1],["1","10"])
+	ax.set_yticks([0,1],["1","10"])
+	ax.set_xticks([0,1,2,3],['wake','NREM','phasic\nREM','tonic\nREM'])
+	ax.set_ylim((-0.3,2.25))
 
 #bootstrap to standard deviation on correlation coefficients
 def crossCorrShuffle(saccadeAutoCorr,eventHist,nShuffle=int(1e4)):
@@ -212,7 +253,7 @@ def plotPeriEventExample(pID,
 	
 	
 #plot statistics summary
-def plotStatsSummary(ax,state='REM',pvalThresh=9e-4):
+def plotStatsSummary(ax,state='REM',pvalThresh=0.05/54.):
 	df_REM=pd.read_csv("./outfiles/%s_burstSaccadeCrossCorr.txt"%state,sep=' ')
 
        
@@ -249,15 +290,15 @@ def plotStatsSummary(ax,state='REM',pvalThresh=9e-4):
 	ax.set_xlabel("Contact #")
 	ax.set_ylabel("correlation coefficient")
 
-
-def plotAveragePeriEvent(ax,state='REM',pvalThresh=9e-4):
+def plotAveragePeriEvent(ax,state='REM',pvalThresh=0.05/54.,shortlabels=True,overlay=False):
 	
 	#load pvalues and select significant bands
-	df_REM=pd.read_csv("./outfiles/%s_burstSaccadeCrossCorr.txt"%state,sep=' ')
+	df_REM=pd.read_csv("./outfiles/%s_burstSaccadeCrossCorr.txt"%'REM',sep=' ')
 
 	
 	
 	selmask=df_REM['crossCorrCoeff_pvalue']<pvalThresh
+	print(np.sum(selmask))
 	df_REM=df_REM[selmask]
 	
 	#load peri event histograms
@@ -296,26 +337,49 @@ def plotAveragePeriEvent(ax,state='REM',pvalThresh=9e-4):
 	
 	
 	notNanMask=np.logical_not(np.isnan(meanAuto))
+	
 	trueCoeff,stdCoeff=crossCorrShuffle(meanAuto,meanPeriEvent)
 	#print(trueCoeff,stdCoeff)
 	
 	#plot mean and SEMs
-	
-	ax.plot(delay,meanPeriEvent,lw=3,c='C3')
-	ax.fill_between(delay,meanPeriEvent-semPeriEvent,meanPeriEvent+semPeriEvent,fc='C3',alpha=0.5)		
+	if(state=='wake'):
+		c='C0'
+	else:
+		c='C3'
+
+	ax.plot(delay,meanPeriEvent,lw=3,c=c)
+	ax.fill_between(delay,meanPeriEvent-semPeriEvent,meanPeriEvent+semPeriEvent,fc=c,alpha=0.5)		
 	ax.axvline(0,ls='--',c='black',lw=0.5)			
-	
+	print(meanPeriEvent[np.abs(delay)<1],semPeriEvent[np.abs(delay)<1])
+	if(overlay):
+		return None
 	
 	ax2=ax.twinx()
-	ax.text(0.02,0.80,r"N$_\mathrm{subjects}$=%d"%nsubj+"\n"+ r"r=$%.2f\pm%.2f$"%(trueCoeff,stdCoeff),fontsize=12,transform=ax.transAxes)	
 	ax2.plot(delay,meanAuto,c='gray',lw=2)	
 	ax2.fill_between(delay,meanAuto-semAuto,meanAuto+semAuto,fc='gray',alpha=0.5)	
-	ax.set_ylabel(r"Burst Probability (relative baseline, in $\%$)")
-	ax2.set_ylabel(r"Rapid EM Probability (relative Baseline, in $\%$)")
-	
+	if(shortlabels):
+		ax.set_ylabel(r"Burst Probability ($\%$)")
+		if(state=="REM"):
+			ax2.set_ylabel(r"Rapid EM Probability ($\%$)")
+		else:
+			ax2.set_ylabel(r"EM Probability ($\%$)")
+		fontsize=10
+	else:
+		ax.set_ylabel(r"Burst Probability (relative baseline, in $\%$)")
+		if(state=="REM"):
+			ax2.set_ylabel(r"Rapid EM Probability (relative Baseline, in $\%$)")
+		else:
+			ax2.set_ylabel(r"EM Probability (relative Baseline, in $\%$)")
+
+		fontsize=12
+		ax.text(0.02,0.80,r"N$_\mathrm{subjects}$=%d"%nsubj+"\n"+ r"r=$%.2f\pm%.2f$"%(trueCoeff,stdCoeff),fontsize=fontsize,transform=ax.transAxes)	
+	print(r"r=$%.2f\pm%.2f$"%(trueCoeff,stdCoeff))
 	ax2.spines["right"].set_edgecolor('gray')
 	ax2.yaxis.label.set_color('gray')
-	ax.set_xlabel("Time relative rapid EM (sec)")
+	if(shortlabels):
+		ax.set_xlabel("Time relative EM (sec)") 
+	else:
+		ax.set_xlabel("Time relative rapid EM (sec)") 
 	ax.set_zorder(999) 
 	ax.patch.set_visible(False)
 	ax.set_xlim((-60,60))
@@ -323,6 +387,7 @@ def plotAveragePeriEvent(ax,state='REM',pvalThresh=9e-4):
 	ax2.minorticks_on()
 
 	#plt.show()	
+	
 	
 		
 def plotFigure3():	
@@ -368,7 +433,7 @@ def plotFigure3():
 	#plot subject level curves
 	ax_avgperi_REM=fig.add_subplot(gs[4, 6:12])
 	ax_avgperi_REM.set_title("(E) Average subject-level probabilities",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
-	plotAveragePeriEvent(ax_avgperi_REM,state='REM')	
+	plotAveragePeriEvent(ax_avgperi_REM,state='REM',shortlabels=False)	
 	
 	ax_phasic_tonic=fig.add_subplot(gs[4, 13:17])
 	ax_phasic_tonic.set_title("(F) Burst rates in\n phasic and tonic REM",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
@@ -382,7 +447,8 @@ plotAveragePeriEvent(ax_avgperi_wake,state='wake')
 plt.show()	
 '''
 #plt.savefig("figures/figure3.pdf",bbox_inches='tight',dpi=600)
-plotFigure3()
+if(__name__=='__main__'): 
+	plotFigure3()
 
 '''
 NOTE: This section requires access to full raw data

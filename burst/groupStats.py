@@ -65,8 +65,10 @@ def compareSubjLevel(rate1,rate2,pID):
 		selmask=pID==uniqPID[i]
 		rate1Subj[i]=np.mean(rate1[selmask])
 		rate2Subj[i]=np.mean(rate2[selmask])
-	print(np.mean(rate1Subj<rate2Subj))
-	return wilcoxon(x=rate1Subj, y=rate2Subj).pvalue
+	tst=wilcoxon(x=rate1Subj, y=rate2Subj)
+
+	return tst.pvalue,tst.statistic
+	
 	
 
 #function to count number of bands
@@ -122,6 +124,7 @@ def getDetectionProbabilities():
 	print("pvalue of detection probability in Wake>NREM (for bands at >19 Hz)")	
 	print(np.mean(countRealizations[1]<=countRealizations[2]))
 	
+
 #compare rates at the subject level between different bands	
 def getRateStats():
 	df=getSignificantBands(which='allUnique')	
@@ -141,23 +144,26 @@ def getRateStats():
 	maskGamma=df['freqPeak']>=19
 
 	
-	pSpindleWake=compareSubjLevel(burstRateNREM[maskSpindle],burstRateWake[maskSpindle],pID[maskSpindle])
-	pSpindleREM=compareSubjLevel(burstRateNREM[maskSpindle],burstRateREM[maskSpindle],pID[maskSpindle])
-	print("p-values for rates in spindle bands: %.3e (wake), %.3e (REM)"%(pSpindleWake,pSpindleREM))
-	pGammaWake=compareSubjLevel(burstRateNREM[maskGamma],burstRateWake[maskGamma],pID[maskGamma])
-	pGammaREM=compareSubjLevel(burstRateNREM[maskGamma],burstRateREM[maskGamma],pID[maskGamma])
-	print("p-values for rates in bands >=19 Hz: %.3e (wake), %.3e (REM)"%(pGammaWake,pGammaREM))
+	pSpindleWake,statsWake=compareSubjLevel(burstRateNREM[maskSpindle],burstRateWake[maskSpindle],pID[maskSpindle])
+	pSpindleREM,statsREM=compareSubjLevel(burstRateNREM[maskSpindle],burstRateREM[maskSpindle],pID[maskSpindle])
+	print("p-values for rates in spindle bands: %.3e (wake, statistic=%d), %.3e; (REM, statistic=%d)"%(pSpindleWake,statsWake,pSpindleREM,statsREM))
+	pGammaWake,statsWake=compareSubjLevel(burstRateNREM[maskGamma],burstRateWake[maskGamma],pID[maskGamma])
+	pGammaREM,statsREM=compareSubjLevel(burstRateNREM[maskGamma],burstRateREM[maskGamma],pID[maskGamma])
+	print("p-values for rates in bands >=19 Hz: %.3e (wake,  statistic=%d), %.3e (REM,  statistic=%d)"%(pGammaWake,statsWake,pGammaREM,statsREM))
 
-	pGammaWakePhasicREM=compareSubjLevel(burstRatePhasicREM[maskGamma],burstRateWake[maskGamma],pID[maskGamma])
-	pGammaWakeTonicREM=compareSubjLevel(burstRateTonicREM[maskGamma],burstRateWake[maskGamma],pID[maskGamma])
-	pGammaPhasicTonic=compareSubjLevel(burstRateTonicREM[maskGamma],burstRatePhasicREM[maskGamma],pID[maskGamma])
+	pGammaWakePhasicREM,statsGammaWakePhasicREM=compareSubjLevel(burstRatePhasicREM[maskGamma],burstRateWake[maskGamma],pID[maskGamma])
+	pGammaWakeTonicREM,statsGammaWakeTonicREM=compareSubjLevel(burstRateTonicREM[maskGamma],burstRateWake[maskGamma],pID[maskGamma])
+	pGammaPhasicTonic,statsGammaPhasicTonic=compareSubjLevel(burstRateTonicREM[maskGamma],burstRatePhasicREM[maskGamma],pID[maskGamma])
 
-	pGammaNREMPhasicREM=compareSubjLevel(burstRatePhasicREM[maskGamma],burstRateNREM[maskGamma],pID[maskGamma])
-	pGammaNREMTonicREM=compareSubjLevel(burstRateTonicREM[maskGamma],burstRateNREM[maskGamma],pID[maskGamma])
+	pGammaNREMPhasicREM,statsGammaNREMPhasicREM=compareSubjLevel(burstRatePhasicREM[maskGamma],burstRateNREM[maskGamma],pID[maskGamma])
+	pGammaNREMTonicREM,statsGammaNREMTonicREM=compareSubjLevel(burstRateTonicREM[maskGamma],burstRateNREM[maskGamma],pID[maskGamma])
 
-	print("p-values for rates in bands >=19 Hz: %.4f (wake-phasic), %.4f (wake-tonic), %.4f (phasic-tonic)"%(pGammaWakePhasicREM,pGammaWakeTonicREM,pGammaPhasicTonic))
-	print("p-values for rates in bands >=19 Hz: %.4f (phasic-NREM), %.4f (tonic-NREM)"%(pGammaNREMPhasicREM,pGammaNREMTonicREM))
-
+	print("p-values for rates in bands >=19 Hz: %.3e (wake-phasic,  statistic=%d),"
+	" %.3e (wake-tonic,  statistic=%d), %.3e (phasic-tonic,  statistic=%d)"%(pGammaWakePhasicREM,statsGammaWakePhasicREM,
+																		  pGammaWakeTonicREM,statsGammaWakeTonicREM,
+																		  pGammaPhasicTonic,statsGammaPhasicTonic))
+	print("p-values for rates in bands >=19 Hz: %.3e (phasic-NREM,  statistic=%d), %.3e (tonic-NREM,  statistic=%d)"%(pGammaNREMPhasicREM,statsGammaNREMPhasicREM,
+																												   pGammaNREMTonicREM,statsGammaNREMTonicREM))
 #compare rates at the subject level between different bands	
 def getScalpDetectionStats():
 	df=getSignificantBands(which='gamma')

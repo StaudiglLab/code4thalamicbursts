@@ -64,5 +64,6 @@ def writeEventCorrelationAll(sleepscoreSelect=5):
 		np.save("outfiles/periEventAll_wake.npy",periEventAll)
 		np.save("outfiles/saccadeAutoCorrAll_wake.npy",saccadeAutoCorrAll)	
 	
-writeEventCorrelationAll(sleepscoreSelect=5)	
+#writeEventCorrelationAll(sleepscoreSelect=5)	
+writeEventCorrelationAll(sleepscoreSelect=0)	
 

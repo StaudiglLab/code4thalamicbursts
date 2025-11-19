@@ -17,7 +17,7 @@ from scipy.interpolate import interp1d
 
 from core import *
 from core.helpers import *
-from coreFunctions import getBurstRate2D,getBootstrapErrorOnCurve,getSignificantBands
+from burst.coreFunctions import getBurstRate2D,getBootstrapErrorOnCurve,getSignificantBands
 from psd.waveletTransform import compute_wavelet_transform
 
 

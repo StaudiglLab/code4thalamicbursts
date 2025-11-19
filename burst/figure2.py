@@ -134,8 +134,8 @@ def plotBurstRateRatioGroupLevel(band,ax):
 	for i in range(0,len(uniqPID)):
 		ax.plot(np.arange(3),(burstRates_subj[i]),c='gray',lw=1,marker='o',ms=1,zorder=-999)
 	ax.set_ylabel("Burst Rate (/min)")
-	ax.set_yticks([0,1],["1","10"])
-	ax.set_yticks([0,1],["1","10"])
+	ax.set_yticks([0,1,2],["1","10","100"])
+	ax.set_yticks([0,1,2],["1","10","100"])
 	ax.set_xticks([0,1,2],states)
 	ax.set_ylim((-0.3,2))
 	
