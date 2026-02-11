@@ -178,7 +178,7 @@ def plotForPaper(whichMetric):
     plotOverlays('pthal106b',
                  whichMetric=whichMetric,axs=[axs['C'],axs['D']])
 
-    plt.savefig("figures/%s.pdf"%whichMetric,transparent=False,bbox_inches='tight',dpi=300.0)
+    plt.savefig("figures/Chowdhury_EDF3.jpg",transparent=False,bbox_inches='tight',dpi=300.0)
     #plt.savefig("figures/%s.png"%whichMetric,transparent=False,bbox_inches='tight',dpi=300.0)
 
 plotForPaper('pupil')

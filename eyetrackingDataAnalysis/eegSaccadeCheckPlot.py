@@ -33,4 +33,4 @@ fig,axs=plt.subplots(1,2,figsize=(10,10))
 plotSaccades(ax=axs[0],pID='pthal103',label='patient P15')
 plotSaccades(ax=axs[1],pID='pthal106b',label='patient P17')
 
-plt.savefig("figures/eyetiming.pdf",bbox_inches='tight',dpi=300)
+plt.savefig("figures/Chowdhury_EDF6.jpg",bbox_inches='tight',dpi=300)

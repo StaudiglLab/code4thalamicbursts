@@ -155,10 +155,10 @@ def selectBurstsFromEvents(pID,
 			maxFreqWidth=20,
 			timeDistInCycleForMerge=1.5,
 			freqDistForMerge=1, #in Hz
-			freqrange=[8,48.0],
+			freqrange=[4.0,48.0],
 			sfreq=200.0):
 
-
+	print(freqrange)
 	#load bursts and sort by starting time
 	data=np.load(rootdir+"/burstFromMorlet/%s_%s.npy"%(pID,ch_name))
 	startTimeIndx=data[:,4]

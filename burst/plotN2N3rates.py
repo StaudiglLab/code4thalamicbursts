@@ -64,8 +64,9 @@ def plotBurstRateRatioGroupLevel(band,ax):
     spacing=0.07
     isig=0
     #plotting significant effects
-    ncomparision=(len(states)*(len(states)-1))
+    ncomparision=(len(states)*(len(states)-1))/2
     print("Number of comparisions:",ncomparision)
+    icomp=0
     for i in range(0,len(states)):
         for j in range(i+1,len(states)):
             wilcoxtst=wilcoxon(x=burstRates_subj[:,i], y=burstRates_subj[:,j])
@@ -75,7 +76,7 @@ def plotBurstRateRatioGroupLevel(band,ax):
                 print("Significant effect:",states[i],states[j])
                 ax.plot([i,j],[start+spacing*isig,start+spacing*isig],c='black',marker='|')
                 isig+=1           
-    
+            icomp+=1
     ax.set_ylabel("Burst Rate (/min)")
     ax.set_yticks([0,1,2],["1","10","100"])
     ax.set_yticks([0,1,2],["1","10","100"])

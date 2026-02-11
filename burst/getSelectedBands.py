@@ -211,6 +211,6 @@ def getSelection(infile,outfile,maxWidth=30,pvalThresh=7e-5):
 	df_freqs.to_csv(outfile,sep=' ',index=False)
 	
 #uncomment the following lines to get list of significant bands					
-getSelection('outfiles/bursts_detectedFrequencies.txt',"outfiles/bursts_detectedFrequencies_selected.txt",pvalThresh=7e-5)
-
-#getSelection('outfiles/bursts_detectedFrequencies_scalp.txt',"outfiles/bursts_detectedFrequencies_scalp_selected.txt",pvalThresh=7e-5)
+if(__name__=='__main__'):
+	getSelection('outfiles/bursts_detectedFrequencies.txt',"outfiles/bursts_detectedFrequencies_selected.txt",pvalThresh=7e-5)
+	getSelection('outfiles/bursts_detectedFrequencies_scalp.txt',"outfiles/bursts_detectedFrequencies_scalp_selected.txt",pvalThresh=7e-5)

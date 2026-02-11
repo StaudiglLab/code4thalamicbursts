@@ -39,7 +39,14 @@ def bootStrapLogisticRegression(hasSignal,distances,niter):
 	distanceRange=np.expand_dims(np.arange(0,10,0.05),axis=1)
 	probDistribution=np.zeros((nstruct,niter,len(distanceRange)))	
 	nSubj=len(hasSignal)
-	
+	true_r=np.zeros(nstruct)
+	validMask=hasSignal>-1
+	for iStruct in range(0,nstruct):
+		lg=LogisticRegression(solver='liblinear')
+		lg.fit(np.expand_dims(distances[:,:,iStruct][validMask].flatten(),axis=1),hasSignal[validMask].flatten())
+		true_r[iStruct]=lg.coef_[0,0]
+
+
 	#bootstrap
 	for i in range(niter):
 		#select surrogate cohort
@@ -56,13 +63,14 @@ def bootStrapLogisticRegression(hasSignal,distances,niter):
 			coeff[iStruct,i]=lg.coef_[0,0]
 			probDistribution[iStruct,i]=lg.predict_proba(distanceRange)[:,1]
 
-	return coeff,distanceRange[:,0],probDistribution
+	return coeff,distanceRange[:,0],probDistribution,true_r
 
 #perform logistic regression for multiple regions
 
 def logisticReg(infile='contacts_freesurfer.txt',
 		structures=['Central','AV'],
 		isMidPointAnalysis=False,
+		let=['(a)','(b)','(c)'], #for labelling panels
 		axs=None			#matplotlib axes to plot regressions on
 		):
 
@@ -101,13 +109,15 @@ def logisticReg(infile='contacts_freesurfer.txt',
 	
 		
 	#bootstrap
-	coeff,dist,probDistribution=bootStrapLogisticRegression(hasSignal,distances,niter=100000)
+	coeff,dist,probDistribution,true_r=bootStrapLogisticRegression(hasSignal,distances,niter=int(1e5))
 	
 	for iStruct in range(len(structures)):
 		print("---------------------")
-		print(structures[iStruct])		
-		print("pvalues: %.2e"%np.mean(coeff[iStruct]>0))
-		print("reg coeff",np.mean(coeff[iStruct]))
+		print(structures[iStruct])
+		pvalue=2*np.min([np.mean(coeff[iStruct]<0),np.mean(coeff[iStruct]>0)])		
+		print("pvalues: %.3e"%pvalue)
+		
+		print("reg coeff",true_r[iStruct])
 		print("reg coeff er",np.std(coeff[iStruct]))	
 		print("---------------------")
 		
@@ -121,7 +131,6 @@ def logisticReg(infile='contacts_freesurfer.txt',
 	
 
 	c=['C3','C0' ,'C0']
-	let=['(A)','(B)','(C)']
 	#for plotting, with scatter
 	distancesToPlot=distances.copy()
 	distancesToPlot[distances<1.0]+=np.random.randn(np.sum(distances<1.0))*0.06
@@ -161,14 +170,14 @@ def plotFigure4():
 	#fig = plt.figure(figsize=(14, 5))
 	#plt.subplots_adjust(wspace=0.7)
 	#for poster
-	fig = plt.figure(figsize=(14*0.6, 5*0.6))#,layout='constrained')
+	fig = plt.figure(figsize=(14, 5))#,layout='constrained')
 	plt.subplots_adjust(wspace=1)
 	gs = fig.add_gridspec(2, 8)
 	
 	ax_CT=fig.add_subplot(gs[:, 2:5])
 	ax_AV=fig.add_subplot(gs[:, 5:])
 	logisticReg(structures=['Central','AV'],
-			axs=[ax_CT,ax_AV],isMidPointAnalysis=False)
+			axs=[ax_CT,ax_AV],isMidPointAnalysis=False,let=['(b)','(c)'])
 	ax_CT.set_ylabel("Detection probability of\n Wake, REM Oscillations")
 	ax_CT.set_yticks([0,0.5,1])
 	ax_AV.set_yticks([0,0.5,1])
@@ -180,14 +189,14 @@ def plotFigure4():
 	ax_slice2=fig.add_subplot(gs[1, :2])
 	#ax_slice1.set_title(loc='left',fontdict={'fontweight':'bold','fontsize':10})
 	vizCT([ax_slice1,ax_slice2])
-	ax_slice1.set_title("(A) Thalamic Regions",loc='center',fontdict={'fontweight':'bold','fontsize':10})
+	ax_slice1.set_title("(a) Thalamic Regions",loc='center',fontdict={'fontweight':'bold','fontsize':10})
 	plt.savefig("figures/figure4.pdf",bbox_inches='tight',dpi=300,transparent=False)
 
 def plotRegressionWithMidpoints():
 	#fig = plt.figure(figsize=(14, 5))
 	#plt.subplots_adjust(wspace=0.7)
 	#for poster
-	fig = plt.figure(figsize=(14*0.6, 5*0.6))#,layout='constrained')
+	fig = plt.figure(figsize=(14, 5))#,layout='constrained')
 	plt.subplots_adjust(wspace=1)
 	gs = fig.add_gridspec(2, 8)
 	
@@ -200,7 +209,7 @@ def plotRegressionWithMidpoints():
 	ax_AV.set_yticks([0,0.5,1])
 
 	
-	plt.savefig("figures/figure4withMidpointDistances.pdf",bbox_inches='tight',dpi=300,transparent=False)
+	plt.savefig("figures/Chowdhury_EDF7.jpg",bbox_inches='tight',dpi=300,transparent=False)
 	
 plotFigure4()
 plotRegressionWithMidpoints()

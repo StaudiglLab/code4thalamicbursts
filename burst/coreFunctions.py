@@ -43,11 +43,13 @@ def getPhasicTonicLabels(pID,segmentDurationInSec=4):
 	sleepScore1s=interp1d(timeSS,sleepScore,kind='nearest')(timeOneSec)
 	eyeMovementCounts=np.zeros(len(timeOneSec))
 	eyeMovementInterval=np.zeros(len(timeOneSec))
-
-	eyeMovParams=pd.read_csv(rootdir+"/eyeMovParams/%s_eyeMovEvents_alldetections.csv"%pID)
-	eyeMovParams=eyeMovParams.sort_values('onsetIndex')
-	eyeMovTime=eyeMovParams['onsetIndex'].values.astype("int")/200.0
-	
+	if(pID=='demo'):
+		eyeMovTime=np.array([])
+	else:
+		eyeMovParams=pd.read_csv(rootdir+"/eyeMovParams/%s_eyeMovEvents_alldetections.csv"%pID)
+		eyeMovParams=eyeMovParams.sort_values('onsetIndex')
+		eyeMovTime=eyeMovParams['onsetIndex'].values.astype("int")/200.0
+		
 	startIndx,width=getClustersFromMask(sleepScore1s==5)	
 	#print("Number of REM clusters:%d"%len(startIndx))
 	for iCluster in range(len(startIndx)):        

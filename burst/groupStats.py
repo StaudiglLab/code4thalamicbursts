@@ -31,12 +31,13 @@ def getDetectionCounts( pIDs, 		#list of pIDs
 	pID_chname=pIDs+ch_names
 	uniquePID=np.unique(pIDs)	
 	npID=len(uniquePID)
-	
+	nBipTotal=len(cohortForPaper)*6-3 #-3 for p26, one hemi only
+	print("Total number of bipolar",nBipTotal)
 	#get counts per electrode
 	meanRate=np.zeros(nMasks)	
 	for i in range(0,nMasks):
 		meanRate[i]=len(np.unique(pID_chname[detectionMasks[i]]))
-	meanRate/=len(np.unique(pID_chname))
+	meanRate/=nBipTotal
 	print("Total number of contacts: %d"%len(np.unique(pID_chname)))
 	print("Mean detection rates",meanRate)
 	#bootstrap subjects and get counts
@@ -50,7 +51,12 @@ def getDetectionCounts( pIDs, 		#list of pIDs
 		for iPID in range(0,npID):
 			for k in range(0,nMasks):
 				countRealizations[k,iRealization]+=len(np.unique(pID_chname[np.logical_and(detectionMasks[k],pIDs==pIDselect[iPID])]))
-			norm+=len(np.unique(pID_chname[pIDs==pIDselect[iPID]]))
+			if(pIDselect[iPID]=='p14'):
+				norm+=12		#two epochs for p14
+			elif(pIDselect[iPID]=='p26'):
+				norm+=3			#one hemi only
+			else:
+				norm+=6
 		countRealizations[:,iRealization]/=norm
 	return meanRate,countRealizations
 	

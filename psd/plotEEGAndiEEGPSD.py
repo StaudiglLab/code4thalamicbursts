@@ -29,7 +29,7 @@ def plotPowerOnScalp():
 	df=getSignificantBands('gamma')
 
 	#groups of electrodes
-	groups={'(A) Thalamus (iEEG)':['Thalamus'],'(B) Frontal (scalp)':['Fp1','Fp2','F7','F8'],'(C) Central (scalp)':['T7','P7','T8','P8'],'(D) Occipital (scalp)':['O1','O2']}	
+	groups={'(a) Thalamus (iEEG)':['Thalamus'],'(b) Frontal (scalp)':['Fp1','Fp2','F7','F8'],'(c) Central (scalp)':['T7','P7','T8','P8'],'(d) Occipital (scalp)':['O1','O2']}	
 	states=['wake','REM','NREM']
 	
 	groupNames=list(groups.keys())	
@@ -77,6 +77,6 @@ def plotPowerOnScalp():
 		axs[i].set_xticks([-5,0,5],[r"f$_\mathrm{osc}$-5 Hz", "f$_\mathrm{osc}$","f$_\mathrm{osc}$+5 Hz"])
 		axs[i].minorticks_on()
 
-	plt.savefig("figures/EEGandiEEGpower.pdf",bbox_inches='tight',dpi=300.0)	
+	plt.savefig("figures/Chowdhury_EDF1.jpg",bbox_inches='tight',dpi=300.0)	
 	
 plotPowerOnScalp()	

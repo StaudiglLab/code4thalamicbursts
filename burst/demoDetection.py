@@ -59,7 +59,6 @@ def getDetectedFrequencies(niter=int(1e6),outfigpdf="figures/bursts_demo.pdf",ou
 	pdf.close()
 
 
-
 getDetectedFrequencies()
 getSelection(infile='outfiles/bursts_detectedFrequencies_demo.txt',outfile='outfiles/bursts_detectedFrequencies_demo_selected.txt')
 

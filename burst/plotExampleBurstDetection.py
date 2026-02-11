@@ -24,5 +24,5 @@ plt.subplots_adjust(hspace=0.2)
 plotMorletSegment(axs[0],'p21','R1-R2',2*3600+30,25,fmin=7,tmax=20,titletext='')
 plotMorletSegment(axs[1],'p21','R1-R2',14.8*3600+260,25,fmin=7,tmax=20,titletext='')
 plotMorletSegment(axs[2],'p21','R1-R2',16.0*3600+230,25,fmin=7,tmax=20,titletext='')
-plt.savefig("figures/burstDetectionExample.pdf",bbox_inches='tight',dpi=600.0)
+plt.savefig("figures/Chowdhury_EDF4.jpg",bbox_inches='tight',dpi=600.0)
 

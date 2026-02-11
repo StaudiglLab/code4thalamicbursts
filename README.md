@@ -5,7 +5,7 @@ Please clone the current repository (using git clone on linux or gitHub Desktop 
 
 Dependencies:
 
-* python (3.12.2) and the following python packages:
+* python (3.12.3) and the following python packages:
 * MNE-Python (1.8.0)
 * numpy (1.26.4)
 * numba (0.60.0)
@@ -19,6 +19,7 @@ Dependencies:
 * scikit-learn (1.5.2)
 * nilearn (0.10.4)
 * h5py (3.12.1)
+* pingouin (0.5.5)
 
 NOTE: The versions for the packages indicate those on which the codes were tested to run. However, the code is also expected to run with other versions of the packages.
 

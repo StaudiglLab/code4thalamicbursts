@@ -286,7 +286,7 @@ def plotConnectivityRelFreq(axs,	#matplotlib axes to draw on
 		for iState in range(len(states)):
 			
 			axs[iGroup].text(0.02,0.9,electrodeGroupNames[iGroup],transform=axs[iGroup].transAxes,fontsize=10)
-			axs[iGroup].plot(freqAxisCommon,contactMean[iGroup,iState],c='C%d'%iState)
+			axs[iGroup].plot(freqAxisCommon,contactMean[iGroup,iState],c='C%d'%iState,label=states[iState])
 			axs[iGroup].fill_between(freqAxisCommon,contactMean[iGroup,iState]-contactStd[iGroup,iState],contactMean[iGroup,iState]+contactStd[iGroup,iState],fc='C%d'%iState,alpha=0.5)
 			axs[iGroup].set_xlim((freqAxisCommon[0],freqAxisCommon[-1]))
 			axs[iGroup].minorticks_on()
@@ -332,20 +332,23 @@ def EDF2(whichMetric='wPLI'):
 	ax_freq_spindle[1,0].set_xticks([-5,0,5],[r"f$_\mathrm{0}$-5 Hz", r"f$_\mathrm{0}$",r"f$_\mathrm{0}$+5 Hz"])	
 	
 	
-	ax_mean_gamma.set_title("(A) Group Statistics for Fast Oscillations",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
-	ax_mean_spindle.set_title("(B) Group Statistics for Spindles",loc='left',fontdict={'fontweight':'bold','fontsize':10})			
+	ax_mean_gamma.set_title("(a) Group Statistics for Fast Oscillations",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
+	ax_mean_spindle.set_title("(b) Group Statistics for Spindles",loc='left',fontdict={'fontweight':'bold','fontsize':10})			
 	ax_mean_gamma.set_ylim((10**-2.5,0.55))	
 	ax_mean_spindle.set_ylim((10**-2.5,0.55))	
 	ax_mean_gamma.set_yscale("log")
 	ax_mean_spindle.set_yscale("log")
 	
-	ax_freq_gamma[0,0].set_title("(C) Mean wPLI for Fast Oscillations",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
-	ax_freq_spindle[0,0].set_title("(D) Mean wPLI for Spindles",loc='left',fontdict={'fontweight':'bold','fontsize':10})		
+	ax_freq_gamma[0,0].set_title("(c) Mean wPLI for Fast Oscillations",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
+	ax_freq_spindle[0,0].set_title("(d) Mean wPLI for Spindles",loc='left',fontdict={'fontweight':'bold','fontsize':10})		
 	
 	
 	plotConnectivityRelFreq(ax_freq_gamma.flatten(),'gamma','Cpz',whichMetric=whichMetric)	
 	plotConnectivityRelFreq(ax_freq_spindle.flatten(),'spindle','Cpz',whichMetric=whichMetric)		
-	plt.savefig("figures/wPLI.pdf",transparent=False,bbox_inches='tight',dpi=300.0)
+	ax_freq_gamma[-1,-1].legend(fontsize=7)
+	ax_freq_spindle[-1,-1].legend(fontsize=7)
+
+	plt.savefig("figures/Chowdhury_EDF2.jpg",transparent=False,bbox_inches='tight',dpi=300.0)
 
 
 def SuppInfo():
@@ -393,19 +396,22 @@ def SuppInfo():
 	ax_freq_gamma_tr[1,0].set_xticks([-5,0,5],[r"f$_\mathrm{0}$-5 Hz", r"f$_\mathrm{0}$",r"f$_\mathrm{0}$+5 Hz"])	
 	
 	
-	ax_mean_gamma.set_title("(A) Group Statistics for Fast Oscillations\n(Standard GC score)",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
-	ax_mean_gamma_tr.set_title("(B) Group Statistics for Fast Oscillations\n(Time-reversed GC score)",loc='left',fontdict={'fontweight':'bold','fontsize':10})			
+	ax_mean_gamma.set_title("(a) Group Statistics for Fast Oscillations\n(Standard GC score)",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
+	ax_mean_gamma_tr.set_title("(b) Group Statistics for Fast Oscillations\n(Time-reversed GC score)",loc='left',fontdict={'fontweight':'bold','fontsize':10})			
 	ax_mean_gamma.set_ylim((-0.001,0.018))
 	ax_mean_gamma_tr.set_ylim((-0.007,0.018))
 
 	
-	ax_freq_gamma[0,0].set_title("(C) Mean GC Score for Fast Oscillations\n(Standard)",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
-	ax_freq_gamma_tr[0,0].set_title("(D) Mean GC Score for Fast Oscillations\n(Time-reversed)",loc='left',fontdict={'fontweight':'bold','fontsize':10})		
+	ax_freq_gamma[0,0].set_title("(c) Mean GC Score for Fast Oscillations\n(Standard)",loc='left',fontdict={'fontweight':'bold','fontsize':10})	
+	ax_freq_gamma_tr[0,0].set_title("(d) Mean GC Score for Fast Oscillations\n(Time-reversed)",loc='left',fontdict={'fontweight':'bold','fontsize':10})		
 	
 	
 	plotConnectivityRelFreq(ax_freq_gamma.flatten(),'gamma','Cpz',whichMetric='gc')	
 	plotConnectivityRelFreq(ax_freq_gamma_tr.flatten(),'gamma','Cpz',whichMetric='gc_tr')		
 	#plt.savefig("figures/supplementaryInfo1.png",transparent=False,bbox_inches='tight',dpi=300.0)
+	ax_freq_gamma_tr[-1,-1].legend(fontsize=7)
+	ax_freq_gamma[-1,-1].legend(fontsize=7)
+
 	plt.savefig("figures/Granger.pdf",transparent=False,bbox_inches='tight',dpi=300.0)
 
 SuppInfo()

@@ -316,6 +316,3 @@ def plotImpedanceCorrelation():
 
 plotSupplementaryFigure()
 plotImpedanceCorrelation()
-
-# uncomment to get r and p-values for the amplitude vs. rate correlation
-#plotRateAmpCorrelation()
